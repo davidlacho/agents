@@ -9,12 +9,16 @@ from langchain.prompts import (
 )
 from langchain.schema import SystemMessage
 
+from handlers.chat_model_start_handler import ChatModelStartHandler
 from tools.report import write_report_tool
 from tools.sql import describe_tables_tool, list_tables, run_query_tool
 
 load_dotenv()
 
-chat = ChatOpenAI()
+handler = ChatModelStartHandler()
+chat = ChatOpenAI(
+    callbacks=[handler],
+)
 
 tables = list_tables()
 
@@ -23,7 +27,7 @@ prompt = ChatPromptTemplate(
         SystemMessage(
             content=(
                 "You are an AI that has access to a SQLite database. "
-                f"The database has tables of: {tables}\n"
+                f"The database has tables of: {tables}"
                 "Do not make any assumptions about what tables exist "
                 "or what columns exist. Instead, use the 'describe_tables' function"
             )
@@ -40,7 +44,7 @@ tools = [run_query_tool, describe_tables_tool, write_report_tool]
 
 agent = OpenAIFunctionsAgent(llm=chat, prompt=prompt, tools=tools)
 
-agent_executor = AgentExecutor(agent=agent, verbose=True, tools=tools, memory=memory)
+agent_executor = AgentExecutor(agent=agent, verbose=False, tools=tools, memory=memory)
 
 agent_executor("How many orders are there? Write an html report.")
 agent_executor("Repeat the same process for users")
